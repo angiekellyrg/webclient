@@ -22,6 +22,7 @@ const maxInputHeight = 144;
 const maxAssistantReplyDisplayLength = 400;
 const maxResponsePreviewLength = 800;
 const maxSearchIterations = 500;
+const requestTimeoutMs = 15000;
 
 const state = {
   session: null,
@@ -119,7 +120,7 @@ async function handleLoginSubmit(event) {
 
     appendMessage({
       role: 'system',
-      content: `Sesión iniciada para ${state.session.nombre}. clienteId: ${state.session.clienteId}`,
+      content: `Sesión iniciada para ${state.session.nombre}.`,
     });
 
     appendApiResponse(response, 'Respuesta de login');
@@ -226,10 +227,12 @@ function extractAssistantReply(response) {
 function findFirstStringByKeys(value, keys) {
   const queue = [value];
   let iterations = 0;
+  let currentIndex = 0;
 
-  while (queue.length > 0 && iterations < maxSearchIterations) {
+  while (currentIndex < queue.length && iterations < maxSearchIterations) {
     iterations += 1;
-    const current = queue.shift();
+    const current = queue[currentIndex];
+    currentIndex += 1;
 
     if (Array.isArray(current)) {
       queue.push(...current);
@@ -358,17 +361,27 @@ function validateChatEndpoint(endpoint) {
 
 async function postJson(endpoint, payload, headers) {
   let response;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), requestTimeoutMs);
 
   try {
     response = await fetch(endpoint, {
       method: 'POST',
       headers,
+      credentials: 'omit',
+      signal: controller.signal,
       body: JSON.stringify(payload),
     });
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('El API del chat tardó demasiado en responder.');
+    }
+
     throw new Error(
       'No fue posible conectar con el API del chat. Verifica CORS, red y disponibilidad del endpoint.',
     );
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 
   const rawText = await response.text();
