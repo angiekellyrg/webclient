@@ -6,7 +6,10 @@
     <title>WebClient</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body data-chat-endpoint="/api/chat">
+  <body
+    data-chat-endpoint="https://17iwi3fpi4.execute-api.us-east-2.amazonaws.com/chat/send"
+    data-socio-id="1234567"
+  >
     <main class="app-shell" aria-label="Contenedor principal">
       <iframe
         class="content-frame"
@@ -25,7 +28,7 @@
       aria-expanded="false"
       aria-label="Abrir chat"
     >
-      <img src="/assets/chat.png" alt="" aria-hidden="true" />
+      <span class="chat-toggle__badge" aria-hidden="true">Dr</span>
     </button>
 
     <aside
@@ -35,9 +38,12 @@
       aria-labelledby="chat-title"
     >
       <header class="chat-header">
-        <div>
-          <p class="chat-eyebrow">Soporte</p>
-          <h1 id="chat-title">Chat en línea</h1>
+        <div class="chat-profile">
+          <div class="chat-avatar" aria-hidden="true">Dr</div>
+          <div>
+            <p class="chat-agent">Dr.Beting</p>
+            <p id="chat-status" class="chat-status">Inicia sesión para abrir el chat</p>
+          </div>
         </div>
         <button
           id="chat-close"
@@ -49,27 +55,60 @@
         </button>
       </header>
 
-      <section id="chat-messages" class="chat-messages" aria-live="polite">
-        <article class="message message--assistant">
-          <p>
-            Hola, soy el asistente del sitio. Este widget está listo para conectarse a
-            tu API propia.
-          </p>
-        </article>
+      <section id="chat-auth" class="chat-auth">
+        <div class="chat-auth__hero" aria-hidden="true">✦</div>
+        <h1 id="chat-title">Identificación</h1>
+        <p class="chat-auth__copy">
+          Bienvenido. Ingresa tu cuenta para iniciar sesión y abrir el chat.
+        </p>
+
+        <form id="login-form" class="login-form">
+          <label>
+            <span>Nombre</span>
+            <input id="login-name" name="name" type="text" placeholder="Mario" required />
+          </label>
+          <label>
+            <span>Email</span>
+            <input
+              id="login-email"
+              name="email"
+              type="email"
+              placeholder="mario@test.com"
+              autocomplete="username"
+              required
+            />
+          </label>
+          <label>
+            <span>Contraseña</span>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <button id="login-submit" class="chat-cta" type="submit">Entrar aquí</button>
+        </form>
       </section>
 
-      <form id="chat-form" class="chat-form">
-        <label class="sr-only" for="chat-input">Escribe tu mensaje</label>
-        <textarea
-          id="chat-input"
-          name="message"
-          rows="1"
-          maxlength="1000"
-          placeholder="Escribe tu mensaje..."
-          required
-        ></textarea>
-        <button id="chat-submit" type="submit">Enviar</button>
-      </form>
+      <section id="chat-session" class="chat-session" hidden>
+        <section id="chat-messages" class="chat-messages" aria-live="polite"></section>
+
+        <form id="chat-form" class="chat-form">
+          <label class="sr-only" for="chat-input">Escribe tu mensaje</label>
+          <textarea
+            id="chat-input"
+            name="message"
+            rows="1"
+            maxlength="1000"
+            placeholder="Escribe tu mensaje..."
+            required
+          ></textarea>
+          <button id="chat-submit" type="submit">Enviar</button>
+        </form>
+      </section>
     </aside>
 
     <script type="module" src="app.js"></script>
