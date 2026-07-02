@@ -9,6 +9,7 @@ const selectors = {
 };
 
 const defaultChatEndpoint = '/api/chat';
+const maxInputHeight = 144;
 const configuredChatEndpoint = document.body?.dataset.chatEndpoint?.trim();
 
 const chatApi = createChatApiClient({
@@ -115,7 +116,7 @@ function autoResizeTextArea() {
   }
 
   selectors.input.style.height = 'auto';
-  selectors.input.style.height = `${Math.min(selectors.input.scrollHeight, 144)}px`;
+  selectors.input.style.height = `${Math.min(selectors.input.scrollHeight, maxInputHeight)}px`;
 }
 
 function toggleLoadingState(isLoading) {
@@ -152,6 +153,8 @@ function createChatApiClient({ endpoint, headers = {} }) {
         return response.json();
       } catch (error) {
         if (endpoint === defaultChatEndpoint) {
+          console.warn('Default chat endpoint unavailable.', error);
+
           return {
             reply:
               'El widget ya apunta a `/api/chat`. Cuando tu API esté disponible, este mensaje se reemplazará por respuestas reales.',
