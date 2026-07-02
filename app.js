@@ -8,8 +8,11 @@ const selectors = {
   messages: document.querySelector('#chat-messages'),
 };
 
+const DEFAULT_CHAT_ENDPOINT = '/api/chat';
+const configuredChatEndpoint = document.body?.dataset.chatEndpoint?.trim();
+
 const chatApi = createChatApiClient({
-  endpoint: document.body?.dataset.chatEndpoint || null,
+  endpoint: configuredChatEndpoint || DEFAULT_CHAT_ENDPOINT,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -128,24 +131,28 @@ function toggleLoadingState(isLoading) {
 function createChatApiClient({ endpoint, headers = {} }) {
   return {
     async sendMessage(payload) {
-      if (!endpoint) {
-        return {
-          reply:
-            'Este es un chat local listo para integrarse con tu API. Define un endpoint en `createChatApiClient` para activar respuestas reales.',
-        };
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error('No fue posible enviar tu mensaje en este momento.');
+        }
+
+        return response.json();
+      } catch (error) {
+        if (endpoint === DEFAULT_CHAT_ENDPOINT) {
+          return {
+            reply:
+              'El widget ya apunta a `/api/chat`. Cuando tu API esté disponible, este mensaje se reemplazará por respuestas reales.',
+          };
+        }
+
+        throw error;
       }
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error('No fue posible enviar tu mensaje en este momento.');
-      }
-
-      return response.json();
     },
   };
 }
