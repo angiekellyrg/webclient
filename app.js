@@ -99,10 +99,20 @@ async function handleLoginSubmit(event) {
     });
 
     state.session = createSessionFromLogin(response, credentials);
-    selectors.status.textContent = `En línea · ${state.session.nombre}`;
-    selectors.auth.hidden = true;
-    selectors.session.hidden = false;
-    selectors.messages.replaceChildren();
+
+    if (selectors.status) {
+      selectors.status.textContent = `En línea · ${state.session.nombre}`;
+    }
+
+    if (selectors.auth) {
+      selectors.auth.hidden = true;
+    }
+
+    if (selectors.session) {
+      selectors.session.hidden = false;
+    }
+
+    selectors.messages?.replaceChildren();
 
     appendMessage({
       role: 'system',
@@ -201,10 +211,6 @@ function extractAssistantReply(response) {
 }
 
 function findFirstStringByKeys(value, keys) {
-  if (typeof value === 'string') {
-    return '';
-  }
-
   if (Array.isArray(value)) {
     for (const item of value) {
       const match = findFirstStringByKeys(item, keys);
@@ -220,15 +226,12 @@ function findFirstStringByKeys(value, keys) {
     return '';
   }
 
-  for (const key of keys) {
-    const directValue = value[key];
-    if (typeof directValue === 'string' && directValue.trim()) {
-      return directValue.trim();
+  for (const [entryKey, entryValue] of Object.entries(value)) {
+    if (keys.includes(entryKey) && typeof entryValue === 'string' && entryValue.trim()) {
+      return entryValue.trim();
     }
-  }
 
-  for (const nestedValue of Object.values(value)) {
-    const match = findFirstStringByKeys(nestedValue, keys);
+    const match = findFirstStringByKeys(entryValue, keys);
     if (match) {
       return match;
     }
