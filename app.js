@@ -8,11 +8,11 @@ const selectors = {
   messages: document.querySelector('#chat-messages'),
 };
 
-const DEFAULT_CHAT_ENDPOINT = '/api/chat';
+const defaultChatEndpoint = '/api/chat';
 const configuredChatEndpoint = document.body?.dataset.chatEndpoint?.trim();
 
 const chatApi = createChatApiClient({
-  endpoint: configuredChatEndpoint || DEFAULT_CHAT_ENDPOINT,
+  endpoint: configuredChatEndpoint || defaultChatEndpoint,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -142,9 +142,16 @@ function createChatApiClient({ endpoint, headers = {} }) {
           throw new Error('No fue posible enviar tu mensaje en este momento.');
         }
 
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          return {
+            reply: 'Mensaje enviado correctamente.'
+          };
+        }
+
         return response.json();
       } catch (error) {
-        if (endpoint === DEFAULT_CHAT_ENDPOINT) {
+        if (endpoint === defaultChatEndpoint) {
           return {
             reply:
               'El widget ya apunta a `/api/chat`. Cuando tu API esté disponible, este mensaje se reemplazará por respuestas reales.',
