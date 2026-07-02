@@ -19,8 +19,9 @@ const selectors = {
 const chatEndpoint = document.body?.dataset.chatEndpoint?.trim() || '';
 const socioId = document.body?.dataset.socioId?.trim() || '';
 const maxInputHeight = 144;
-const maxAssistantReplyLength = 400;
+const maxAssistantReplyDisplayLength = 400;
 const maxResponsePreviewLength = 800;
+const maxSearchIterations = 500;
 
 const state = {
   session: null,
@@ -215,17 +216,19 @@ function extractAssistantReply(response) {
     return '';
   }
 
-  if (candidate.length <= maxAssistantReplyLength) {
+  if (candidate.length <= maxAssistantReplyDisplayLength) {
     return candidate;
   }
 
-  return `${candidate.slice(0, maxAssistantReplyLength)}…`;
+  return `${candidate.slice(0, maxAssistantReplyDisplayLength)}…`;
 }
 
 function findFirstStringByKeys(value, keys) {
   const queue = [value];
+  let iterations = 0;
 
-  while (queue.length > 0) {
+  while (queue.length > 0 && iterations < maxSearchIterations) {
+    iterations += 1;
     const current = queue.shift();
 
     if (Array.isArray(current)) {
@@ -311,17 +314,25 @@ function toggleMessageLoading(isLoading) {
 }
 
 function createChatApiClient({ endpoint, headers = {} }) {
+  const parsedEndpoint = validateChatEndpoint(endpoint);
+
   return {
-    login(payload) {
-      return postJson(endpoint, payload, headers);
+    async login(payload) {
+      const response = await postJson(parsedEndpoint, payload, headers);
+
+      if (response && Object.keys(response).length > 0) {
+        return response;
+      }
+
+      throw new Error('El login devolvió una respuesta vacía.');
     },
     sendMessage(payload) {
-      return postJson(endpoint, payload, headers);
+      return postJson(parsedEndpoint, payload, headers);
     },
   };
 }
 
-async function postJson(endpoint, payload, headers) {
+function validateChatEndpoint(endpoint) {
   if (!endpoint) {
     throw new Error('Falta configurar data-chat-endpoint para el chat.');
   }
@@ -342,10 +353,14 @@ async function postJson(endpoint, payload, headers) {
     throw new Error('El endpoint del chat debe usar HTTPS.');
   }
 
+  return parsedEndpoint;
+}
+
+async function postJson(endpoint, payload, headers) {
   let response;
 
   try {
-    response = await fetch(parsedEndpoint, {
+    response = await fetch(endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
