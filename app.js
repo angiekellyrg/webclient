@@ -17,8 +17,9 @@ const selectors = {
 };
 
 const chatEndpoint = document.body?.dataset.chatEndpoint?.trim() || '';
-const socioId = document.body?.dataset.socioId?.trim() || '1234567';
+const socioId = document.body?.dataset.socioId?.trim() || '';
 const maxInputHeight = 144;
+const maxAssistantReplyLength = 400;
 
 const state = {
   session: null,
@@ -172,7 +173,7 @@ function createSessionFromLogin(response, credentials) {
   const clienteId = findFirstStringByKeys(response, ['clienteId', 'cliente_id', 'clientId']);
 
   if (!clienteId) {
-    throw new Error('El login respondió sin `clienteId`. Revisa la respuesta del API.');
+    throw new Error('El login respondió sin `clienteId`. Revisa la respuesta de la API.');
   }
 
   const nombre =
@@ -207,7 +208,7 @@ function extractAssistantReply(response) {
     'descripcion',
   ]);
 
-  return candidate && candidate.length < 400 ? candidate : '';
+  return candidate && candidate.length < maxAssistantReplyLength ? candidate : '';
 }
 
 function findFirstStringByKeys(value, keys) {
@@ -300,7 +301,15 @@ function createChatApiClient({ endpoint, headers = {} }) {
 
 async function postJson(endpoint, payload, headers) {
   if (!endpoint) {
-    throw new Error('Falta configurar `data-chat-endpoint` para el chat.');
+    throw new Error('Falta configurar data-chat-endpoint para el chat.');
+  }
+
+  if (!socioId) {
+    throw new Error('Falta configurar data-socio-id para el chat.');
+  }
+
+  if (!endpoint.startsWith('https://')) {
+    throw new Error('El endpoint del chat debe usar HTTPS.');
   }
 
   let response;
