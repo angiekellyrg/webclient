@@ -9,7 +9,7 @@ const selectors = {
 };
 
 const chatApi = createChatApiClient({
-  endpoint: null,
+  endpoint: document.body?.dataset.chatEndpoint || null,
   headers: {
     'Content-Type': 'application/json',
   },
