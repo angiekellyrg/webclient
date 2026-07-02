@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebClient</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell" aria-label="Contenedor principal">
+      <iframe
+        class="content-frame"
+        src="https://dotavip.net"
+        title="Dotavip"
+        loading="lazy"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </main>
+
+    <button
+      id="chat-toggle"
+      class="chat-toggle"
+      type="button"
+      aria-controls="chat-panel"
+      aria-expanded="false"
+      aria-label="Abrir chat"
+    >
+      <img src="/assets/chat.png" alt="" width="64" height="64" />
+    </button>
+
+    <aside
+      id="chat-panel"
+      class="chat-panel"
+      aria-hidden="true"
+      aria-labelledby="chat-title"
+    >
+      <header class="chat-header">
+        <div>
+          <p class="chat-eyebrow">Soporte</p>
+          <h1 id="chat-title">Chat en línea</h1>
+        </div>
+        <button
+          id="chat-close"
+          class="chat-close"
+          type="button"
+          aria-label="Cerrar chat"
+        >
+          ×
+        </button>
+      </header>
+
+      <section id="chat-messages" class="chat-messages" aria-live="polite">
+        <article class="message message--assistant">
+          <p>
+            Hola, soy el asistente del sitio. Este widget está listo para conectarse a
+            tu API propia.
+          </p>
+        </article>
+      </section>
+
+      <form id="chat-form" class="chat-form">
+        <label class="sr-only" for="chat-input">Escribe tu mensaje</label>
+        <textarea
+          id="chat-input"
+          name="message"
+          rows="1"
+          maxlength="1000"
+          placeholder="Escribe tu mensaje..."
+          required
+        ></textarea>
+        <button id="chat-submit" type="submit">Enviar</button>
+      </form>
+    </aside>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
