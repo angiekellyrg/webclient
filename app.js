@@ -20,6 +20,7 @@ const chatEndpoint = document.body?.dataset.chatEndpoint?.trim() || '';
 const socioId = document.body?.dataset.socioId?.trim() || '';
 const maxInputHeight = 144;
 const maxAssistantReplyLength = 400;
+const maxResponsePreviewLength = 800;
 
 const state = {
   session: null,
@@ -173,7 +174,9 @@ function createSessionFromLogin(response, credentials) {
   const clienteId = findFirstStringByKeys(response, ['clienteId', 'cliente_id', 'clientId']);
 
   if (!clienteId) {
-    throw new Error('El login respondió sin `clienteId`. Revisa la respuesta de la API.');
+    throw new Error(
+      `El login respondió sin clienteId. Respuesta recibida: ${createResponsePreview(response)}`,
+    );
   }
 
   const nombre =
@@ -208,37 +211,56 @@ function extractAssistantReply(response) {
     'descripcion',
   ]);
 
-  return candidate && candidate.length < maxAssistantReplyLength ? candidate : '';
+  if (!candidate) {
+    return '';
+  }
+
+  if (candidate.length <= maxAssistantReplyLength) {
+    return candidate;
+  }
+
+  return `${candidate.slice(0, maxAssistantReplyLength)}…`;
 }
 
 function findFirstStringByKeys(value, keys) {
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const match = findFirstStringByKeys(item, keys);
-      if (match) {
-        return match;
+  const queue = [value];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+
+    if (Array.isArray(current)) {
+      queue.push(...current);
+      continue;
+    }
+
+    if (!current || typeof current !== 'object') {
+      continue;
+    }
+
+    for (const [entryKey, entryValue] of Object.entries(current)) {
+      if (keys.includes(entryKey) && typeof entryValue === 'string' && entryValue.trim()) {
+        return entryValue.trim();
       }
-    }
 
-    return '';
-  }
-
-  if (!value || typeof value !== 'object') {
-    return '';
-  }
-
-  for (const [entryKey, entryValue] of Object.entries(value)) {
-    if (keys.includes(entryKey) && typeof entryValue === 'string' && entryValue.trim()) {
-      return entryValue.trim();
-    }
-
-    const match = findFirstStringByKeys(entryValue, keys);
-    if (match) {
-      return match;
+      if (entryValue && typeof entryValue === 'object') {
+        queue.push(entryValue);
+      }
     }
   }
 
   return '';
+}
+
+function createResponsePreview(response) {
+  const preview = JSON.stringify(response);
+
+  if (!preview) {
+    return 'sin contenido';
+  }
+
+  return preview.length <= maxResponsePreviewLength
+    ? preview
+    : `${preview.slice(0, maxResponsePreviewLength)}…`;
 }
 
 function appendMessage({ role, content }) {
@@ -308,14 +330,22 @@ async function postJson(endpoint, payload, headers) {
     throw new Error('Falta configurar data-socio-id para el chat.');
   }
 
-  if (!endpoint.startsWith('https://')) {
+  let parsedEndpoint;
+
+  try {
+    parsedEndpoint = new URL(endpoint);
+  } catch (error) {
+    throw new Error('El endpoint del chat no tiene un formato de URL válido.');
+  }
+
+  if (parsedEndpoint.protocol !== 'https:') {
     throw new Error('El endpoint del chat debe usar HTTPS.');
   }
 
   let response;
 
   try {
-    response = await fetch(endpoint, {
+    response = await fetch(parsedEndpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
