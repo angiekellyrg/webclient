@@ -16,9 +16,9 @@ const selectors = {
 };
 
 const chatEndpoint = document.body?.dataset.chatEndpoint?.trim() || '';
+const historyEndpoint = document.body?.dataset.historyEndpoint?.trim() || '';
 const socioId = document.body?.dataset.socioId?.trim() || '';
 const maxInputHeight = 144;
-const maxAssistantReplyDisplayLength = 400;
 const maxResponsePreviewLength = 800;
 const maxSearchIterations = 500;
 const requestTimeoutMs = 15000;
@@ -29,6 +29,7 @@ const state = {
 
 const chatApi = createChatApiClient({
   endpoint: chatEndpoint,
+  historyEndpoint,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -118,21 +119,47 @@ async function handleLoginSubmit(event) {
     }
 
     selectors.messages?.replaceChildren();
-
-    appendMessage({
-      role: 'system',
-      content: `Sesión iniciada para ${state.session.nombre}.`,
-    });
-
-    appendApiResponse(response, 'Respuesta de login');
     selectors.input?.focus();
+
+    await loadHistory(state.session.clienteId);
   } catch (error) {
     appendMessage({
       role: 'system',
       content: getErrorMessage(error),
     });
+    if (selectors.auth) {
+      selectors.auth.hidden = false;
+    }
+    if (selectors.session) {
+      selectors.session.hidden = true;
+    }
   } finally {
     toggleLoginLoading(false);
+  }
+}
+
+async function loadHistory(clienteId) {
+  try {
+    const data = await chatApi.fetchHistory({ op: 'buscarhistorialid', socioId, clienteId });
+    const mensajes = Array.isArray(data?.mensajes) ? data.mensajes : [];
+
+    if (mensajes.length === 0) {
+      appendMessage({ role: 'system', content: 'No hay mensajes anteriores.' });
+      return;
+    }
+
+    const sorted = [...mensajes].sort((a, b) => (a.fecha || 0) - (b.fecha || 0));
+
+    for (const msg of sorted) {
+      const role = msg.sender === 'CLIENTE' ? 'user' : 'assistant';
+      appendMessage({
+        role,
+        content: msg.mensaje || '',
+        timestamp: msg.fecha,
+      });
+    }
+  } catch (error) {
+    appendMessage({ role: 'system', content: 'No se pudo cargar el historial.' });
   }
 }
 
@@ -162,7 +189,18 @@ async function handleMessageSubmit(event) {
       sender: 'CLIENTE',
     });
 
-    appendApiResponse(response, 'Respuesta del chat');
+    const reply = findFirstStringByKeys(response, [
+      'respuesta',
+      'reply',
+      'message',
+      'mensaje',
+      'detalle',
+      'detail',
+    ]);
+
+    if (reply) {
+      appendMessage({ role: 'assistant', content: reply });
+    }
   } catch (error) {
     appendMessage({
       role: 'system',
@@ -192,37 +230,26 @@ function createSessionFromLogin(response, credentials) {
   };
 }
 
-function appendApiResponse(response, title) {
-  const reply = extractAssistantReply(response);
-  const serializedResponse = JSON.stringify(response, null, 2);
-  const content = reply ? `${title}: ${reply}\n\n${serializedResponse}` : `${title}:\n${serializedResponse}`;
-
-  appendMessage({
-    role: 'assistant',
-    content,
-  });
-}
-
-function extractAssistantReply(response) {
-  const candidate = findFirstStringByKeys(response, [
-    'respuesta',
-    'reply',
-    'message',
-    'mensaje',
-    'detalle',
-    'detail',
-    'descripcion',
-  ]);
-
-  if (!candidate) {
+function formatTimestamp(unixSeconds) {
+  if (!unixSeconds) {
     return '';
   }
 
-  if (candidate.length <= maxAssistantReplyDisplayLength) {
-    return candidate;
+  const date = new Date(unixSeconds * 1000);
+  const now = new Date();
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  const time = date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+  if (isToday) {
+    return time;
   }
 
-  return `${candidate.slice(0, maxAssistantReplyDisplayLength)}…`;
+  const dateStr = date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+  return `${dateStr} ${time}`;
 }
 
 function findFirstStringByKeys(value, keys) {
@@ -270,7 +297,7 @@ function createResponsePreview(response) {
     : `${preview.slice(0, maxResponsePreviewLength)}…`;
 }
 
-function appendMessage({ role, content }) {
+function appendMessage({ role, content, timestamp }) {
   if (!selectors.messages) {
     return;
   }
@@ -281,6 +308,13 @@ function appendMessage({ role, content }) {
   const paragraph = document.createElement('p');
   paragraph.textContent = content;
   article.append(paragraph);
+
+  if (timestamp) {
+    const time = document.createElement('time');
+    time.className = 'message__time';
+    time.textContent = formatTimestamp(timestamp);
+    article.append(time);
+  }
 
   selectors.messages.append(article);
   selectors.messages.scrollTop = selectors.messages.scrollHeight;
@@ -316,8 +350,17 @@ function toggleMessageLoading(isLoading) {
   selectors.input.disabled = isLoading;
 }
 
-function createChatApiClient({ endpoint, headers = {} }) {
+function createChatApiClient({ endpoint, historyEndpoint: historyEndpointUrl, headers = {} }) {
   const parsedEndpoint = validateChatEndpoint(endpoint);
+  let parsedHistoryEndpoint = null;
+
+  if (historyEndpointUrl) {
+    try {
+      parsedHistoryEndpoint = new URL(historyEndpointUrl);
+    } catch {
+      // history endpoint is optional; silently ignore bad URL
+    }
+  }
 
   return {
     async login(payload) {
@@ -328,6 +371,13 @@ function createChatApiClient({ endpoint, headers = {} }) {
       }
 
       throw new Error('El login devolvió una respuesta vacía.');
+    },
+    fetchHistory(payload) {
+      if (!parsedHistoryEndpoint) {
+        return Promise.resolve({ mensajes: [] });
+      }
+
+      return postJson(parsedHistoryEndpoint, payload, headers);
     },
     sendMessage(payload) {
       return postJson(parsedEndpoint, payload, headers);

@@ -285,6 +285,14 @@ button {
   word-break: break-word;
 }
 
+.message__time {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.6;
+  text-align: right;
+}
+
 .message--assistant,
 .message--system {
   align-self: flex-start;
