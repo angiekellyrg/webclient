@@ -42,6 +42,9 @@ selectors.toggle?.addEventListener('click', () => {
 selectors.close?.addEventListener('click', () => setPanelState(false));
 document.addEventListener('keydown', handleKeyDown);
 selectors.loginForm?.addEventListener('submit', handleLoginSubmit);
+document.querySelectorAll('.js-placeholder-link').forEach((link) => {
+  link.addEventListener('click', (event) => event.preventDefault());
+});
 selectors.input?.addEventListener('input', autoResizeTextArea);
 selectors.form?.addEventListener('submit', handleMessageSubmit);
 
