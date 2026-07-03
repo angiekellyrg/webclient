@@ -712,5 +712,9 @@ function getErrorMessage(error) {
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch((error) => {
+      console.error('No se pudo registrar el service worker.', error);
+    });
+  });
 }

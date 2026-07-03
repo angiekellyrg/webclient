@@ -1,24 +1,27 @@
 {
+  "id": "./",
   "name": "Dr.Beting",
   "short_name": "Dr.Beting",
   "description": "Acceso directo a Dr.Beting con chat en vivo",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#040508",
   "theme_color": "#d4a845",
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "assets/chat.png",
+      "src": "assets/pwa-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "assets/chat.png",
+      "src": "assets/pwa-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
