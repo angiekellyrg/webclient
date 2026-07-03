@@ -156,12 +156,13 @@ async function loadHistory(clienteId) {
     for (const msg of sorted) {
       const sender = typeof msg.sender === 'string' ? msg.sender : '';
       const role = sender === 'CLIENTE' ? 'user' : 'assistant';
+      const imageSource = getMessageImageSource(msg);
       appendMessage({
         role,
-        content: msg.mensaje || '',
+        content: getDisplayMessageContent(msg.mensaje, imageSource),
         timestamp: msg.fecha,
-        tipo: msg.tipo,
-        imagen: msg.imagen,
+        tipo: imageSource ? 'imagen' : msg.tipo,
+        imagen: imageSource,
       });
     }
   } catch (error) {
@@ -327,6 +328,114 @@ function isIgnorableReply(reply) {
   const normalizedReply = reply.trim().toLowerCase();
 
   return normalizedReply === savedMessageAcknowledgement;
+}
+
+function getMessageImageSource(message) {
+  if (!message || typeof message !== 'object') {
+    return '';
+  }
+
+  const tipo = typeof message.tipo === 'string' ? message.tipo : '';
+  const candidates = [message.imagen, message.mensaje];
+
+  for (const candidate of candidates) {
+    const normalizedImageSource = normalizeImageSource(candidate, tipo);
+
+    if (normalizedImageSource) {
+      return normalizedImageSource;
+    }
+  }
+
+  return '';
+}
+
+function getDisplayMessageContent(content, imageSource) {
+  if (typeof content !== 'string') {
+    return '';
+  }
+
+  const trimmedContent = content.trim();
+
+  if (!trimmedContent) {
+    return '';
+  }
+
+  if (!imageSource) {
+    return trimmedContent;
+  }
+
+  const decodedContent = decodePossibleImageValue(trimmedContent);
+
+  return decodedContent === imageSource ? '' : trimmedContent;
+}
+
+function normalizeImageSource(value, tipo = '') {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return '';
+  }
+
+  const decodedValue = decodePossibleImageValue(trimmedValue);
+  const normalizedType = tipo.trim().toLowerCase();
+
+  if (isImageDataUrl(decodedValue)) {
+    return decodedValue;
+  }
+
+  if (normalizedType === 'imagen' && looksLikeUrl(decodedValue)) {
+    return decodedValue;
+  }
+
+  if (looksLikeImageUrl(decodedValue)) {
+    return decodedValue;
+  }
+
+  return '';
+}
+
+function decodePossibleImageValue(value) {
+  let decodedValue = value;
+
+  for (let index = 0; index < 2; index += 1) {
+    try {
+      const nextValue = decodeURIComponent(decodedValue);
+
+      if (nextValue === decodedValue) {
+        break;
+      }
+
+      decodedValue = nextValue;
+    } catch (error) {
+      break;
+    }
+  }
+
+  return decodedValue;
+}
+
+function isImageDataUrl(value) {
+  return /^data:image\/[a-z0-9.+-]+;base64,/i.test(value);
+}
+
+function looksLikeUrl(value) {
+  return /^https?:\/\/\S+$/i.test(value);
+}
+
+function looksLikeImageUrl(value) {
+  if (!looksLikeUrl(value)) {
+    return false;
+  }
+
+  return (
+    /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(value) ||
+    /github\.com\/user-attachments\/assets\//i.test(value) ||
+    /githubusercontent\.com\//i.test(value)
+  );
 }
 
 function findFirstStringByKeys(value, keys) {
