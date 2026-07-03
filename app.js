@@ -151,7 +151,8 @@ async function loadHistory(clienteId) {
     const sorted = [...mensajes].sort((a, b) => (a.fecha || 0) - (b.fecha || 0));
 
     for (const msg of sorted) {
-      const role = msg.sender === 'CLIENTE' ? 'user' : 'assistant';
+      const sender = typeof msg.sender === 'string' ? msg.sender : '';
+      const role = sender === 'CLIENTE' ? 'user' : 'assistant';
       appendMessage({
         role,
         content: msg.mensaje || '',
@@ -231,7 +232,7 @@ function createSessionFromLogin(response, credentials) {
 }
 
 function formatTimestamp(unixSeconds) {
-  if (!unixSeconds) {
+  if (typeof unixSeconds !== 'number' || unixSeconds <= 0 || !Number.isFinite(unixSeconds)) {
     return '';
   }
 
@@ -257,7 +258,7 @@ function findFirstStringByKeys(value, keys) {
   let iterations = 0;
   let currentIndex = 0;
 
-  while (currentIndex < queue.length && iterations < maxSearchIterations) {
+  while (currentIndex < Math.min(queue.length, maxSearchIterations)) {
     iterations += 1;
     const current = queue[currentIndex];
     currentIndex += 1;
@@ -357,8 +358,9 @@ function createChatApiClient({ endpoint, historyEndpoint: historyEndpointUrl, he
   if (historyEndpointUrl) {
     try {
       parsedHistoryEndpoint = new URL(historyEndpointUrl);
-    } catch {
+    } catch (error) {
       // history endpoint is optional; silently ignore bad URL
+      void error;
     }
   }
 
