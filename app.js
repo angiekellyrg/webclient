@@ -23,7 +23,10 @@ const maxInputHeight = 144;
 const maxResponsePreviewLength = 800;
 const maxSearchIterations = 500;
 const requestTimeoutMs = 15000;
+const maxDecodeIterations = 2;
 const savedMessageAcknowledgement = 'mensaje guardado correctamente';
+const githubAttachmentUrlPattern = /github\.com\/user-attachments\/assets\//i;
+const githubUserContentUrlPattern = /githubusercontent\.com\//i;
 
 const state = {
   session: null,
@@ -401,7 +404,7 @@ function normalizeImageSource(value, tipo = '') {
 function decodePossibleImageValue(value) {
   let decodedValue = value;
 
-  for (let index = 0; index < 2; index += 1) {
+  for (let index = 0; index < maxDecodeIterations; index += 1) {
     try {
       const nextValue = decodeURIComponent(decodedValue);
 
@@ -433,8 +436,8 @@ function looksLikeImageUrl(value) {
 
   return (
     /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(value) ||
-    /github\.com\/user-attachments\/assets\//i.test(value) ||
-    /githubusercontent\.com\//i.test(value)
+    githubAttachmentUrlPattern.test(value) ||
+    githubUserContentUrlPattern.test(value)
   );
 }
 
