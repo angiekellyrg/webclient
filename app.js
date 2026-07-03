@@ -710,3 +710,7 @@ function getErrorMessage(error) {
 
   return 'Ocurrió un error inesperado. Intenta nuevamente.';
 }
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
