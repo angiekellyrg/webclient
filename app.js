@@ -203,7 +203,7 @@ async function handleMessageSubmit(event) {
       'detail',
     ]);
 
-    if (reply) {
+    if (reply && !isIgnorableReply(reply)) {
       appendMessage({ role: 'assistant', content: reply });
     }
   } catch (error) {
@@ -258,7 +258,7 @@ async function handleImageChange(event) {
       'detail',
     ]);
 
-    if (reply) {
+    if (reply && !isIgnorableReply(reply)) {
       appendMessage({ role: 'assistant', content: reply });
     }
   } catch (error) {
@@ -316,6 +316,16 @@ function formatTimestamp(unixSeconds) {
 
   const dateStr = date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
   return `${dateStr} ${time}`;
+}
+
+function isIgnorableReply(reply) {
+  if (typeof reply !== 'string') {
+    return false;
+  }
+
+  const normalizedReply = reply.trim().toLowerCase();
+
+  return normalizedReply === 'mensaje guardado correctamente';
 }
 
 function findFirstStringByKeys(value, keys) {
