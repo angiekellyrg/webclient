@@ -6,7 +6,6 @@ const selectors = {
   auth: document.querySelector('#chat-auth'),
   session: document.querySelector('#chat-session'),
   loginForm: document.querySelector('#login-form'),
-  loginName: document.querySelector('#login-name'),
   loginEmail: document.querySelector('#login-email'),
   loginPassword: document.querySelector('#login-password'),
   loginSubmit: document.querySelector('#login-submit'),
@@ -78,17 +77,16 @@ function handleKeyDown(event) {
 async function handleLoginSubmit(event) {
   event.preventDefault();
 
-  if (!selectors.loginEmail || !selectors.loginPassword || !selectors.loginName) {
+  if (!selectors.loginEmail || !selectors.loginPassword) {
     return;
   }
 
   const credentials = {
-    nombre: selectors.loginName.value.trim(),
     email: selectors.loginEmail.value.trim(),
     contrasena: selectors.loginPassword.value,
   };
 
-  if (!credentials.nombre || !credentials.email || !credentials.contrasena) {
+  if (!credentials.email || !credentials.contrasena) {
     return;
   }
 
@@ -182,7 +180,7 @@ function createSessionFromLogin(response, credentials) {
   }
 
   const nombre =
-    findFirstStringByKeys(response, ['nombre', 'name', 'clienteNombre']) || credentials.nombre;
+    findFirstStringByKeys(response, ['nombre', 'name', 'clienteNombre']) || credentials.email;
 
   return {
     clienteId,
@@ -295,13 +293,12 @@ function autoResizeTextArea() {
 }
 
 function toggleLoginLoading(isLoading) {
-  if (!selectors.loginSubmit || !selectors.loginEmail || !selectors.loginPassword || !selectors.loginName) {
+  if (!selectors.loginSubmit || !selectors.loginEmail || !selectors.loginPassword) {
     return;
   }
 
   selectors.loginSubmit.disabled = isLoading;
-  selectors.loginSubmit.textContent = isLoading ? 'Ingresando...' : 'Entrar aquí';
-  selectors.loginName.disabled = isLoading;
+  selectors.loginSubmit.textContent = isLoading ? 'Ingresando...' : 'Entra aquí';
   selectors.loginEmail.disabled = isLoading;
   selectors.loginPassword.disabled = isLoading;
 }

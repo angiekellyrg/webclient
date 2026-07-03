@@ -327,6 +327,27 @@ button {
   padding: 0 18px;
 }
 
+.chat-auth__links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.chat-auth__link {
+  font-size: 14px;
+  color: var(--chat-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+
+.chat-auth__link:hover,
+.chat-auth__link:focus-visible {
+  color: var(--chat-gold);
+}
+
 .chat-cta:disabled,
 #chat-submit:disabled,
 .login-form input:disabled,
