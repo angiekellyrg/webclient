@@ -23,6 +23,7 @@ const maxInputHeight = 144;
 const maxResponsePreviewLength = 800;
 const maxSearchIterations = 500;
 const requestTimeoutMs = 15000;
+const savedMessageAcknowledgement = 'mensaje guardado correctamente';
 
 const state = {
   session: null,
@@ -325,7 +326,7 @@ function isIgnorableReply(reply) {
 
   const normalizedReply = reply.trim().toLowerCase();
 
-  return normalizedReply === 'mensaje guardado correctamente';
+  return normalizedReply === savedMessageAcknowledgement;
 }
 
 function findFirstStringByKeys(value, keys) {
