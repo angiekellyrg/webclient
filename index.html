@@ -108,7 +108,13 @@
             placeholder="Escribe tu mensaje..."
             required
           ></textarea>
-          <button id="chat-submit" type="submit">Enviar</button>
+          <div class="chat-form__btns">
+            <label class="chat-img-btn" aria-label="Adjuntar imagen" title="Enviar imagen">
+              <input id="chat-img-input" type="file" accept="image/*" class="sr-only" />
+              📎
+            </label>
+            <button id="chat-submit" type="submit">Enviar</button>
+          </div>
         </form>
       </section>
     </aside>

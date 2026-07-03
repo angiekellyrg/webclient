@@ -11,6 +11,7 @@ const selectors = {
   loginSubmit: document.querySelector('#login-submit'),
   form: document.querySelector('#chat-form'),
   input: document.querySelector('#chat-input'),
+  imgInput: document.querySelector('#chat-img-input'),
   submit: document.querySelector('#chat-submit'),
   messages: document.querySelector('#chat-messages'),
 };
@@ -43,6 +44,7 @@ selectors.toggle?.addEventListener('click', () => {
 selectors.close?.addEventListener('click', () => setPanelState(false));
 document.addEventListener('keydown', handleKeyDown);
 selectors.loginForm?.addEventListener('submit', handleLoginSubmit);
+selectors.imgInput?.addEventListener('change', handleImageChange);
 document.querySelectorAll('.js-placeholder-link').forEach((link) => {
   link.addEventListener('click', (event) => event.preventDefault());
 });
@@ -157,6 +159,8 @@ async function loadHistory(clienteId) {
         role,
         content: msg.mensaje || '',
         timestamp: msg.fecha,
+        tipo: msg.tipo,
+        imagen: msg.imagen,
       });
     }
   } catch (error) {
@@ -210,6 +214,66 @@ async function handleMessageSubmit(event) {
   } finally {
     toggleMessageLoading(false);
   }
+}
+
+async function handleImageChange(event) {
+  const file = event.target.files?.[0];
+
+  if (!file || !state.session) {
+    return;
+  }
+
+  event.target.value = '';
+
+  let base64;
+
+  try {
+    base64 = await readFileAsBase64(file);
+  } catch {
+    appendMessage({ role: 'system', content: 'No se pudo leer la imagen.' });
+    return;
+  }
+
+  appendMessage({ role: 'user', content: '', tipo: 'imagen', imagen: base64 });
+  toggleMessageLoading(true);
+
+  try {
+    const response = await chatApi.sendMessage({
+      socioId,
+      clienteId: state.session.clienteId,
+      nombre: state.session.nombre,
+      mensaje: 'Te envío una imagen',
+      sender: 'CLIENTE',
+      tipo: 'imagen',
+      imagen: base64,
+    });
+
+    const reply = findFirstStringByKeys(response, [
+      'respuesta',
+      'reply',
+      'message',
+      'mensaje',
+      'detalle',
+      'detail',
+    ]);
+
+    if (reply) {
+      appendMessage({ role: 'assistant', content: reply });
+    }
+  } catch (error) {
+    appendMessage({ role: 'system', content: getErrorMessage(error) });
+  } finally {
+    toggleMessageLoading(false);
+  }
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(/** @type {string} */ (reader.result));
+    reader.onerror = () => reject(new Error('Error al leer el archivo.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 function createSessionFromLogin(response, credentials) {
@@ -298,7 +362,7 @@ function createResponsePreview(response) {
     : `${preview.slice(0, maxResponsePreviewLength)}…`;
 }
 
-function appendMessage({ role, content, timestamp }) {
+function appendMessage({ role, content, timestamp, tipo, imagen }) {
   if (!selectors.messages) {
     return;
   }
@@ -306,9 +370,24 @@ function appendMessage({ role, content, timestamp }) {
   const article = document.createElement('article');
   article.className = `message message--${role}`;
 
-  const paragraph = document.createElement('p');
-  paragraph.textContent = content;
-  article.append(paragraph);
+  if (tipo === 'imagen' && imagen) {
+    const img = document.createElement('img');
+    img.src = imagen;
+    img.alt = content || 'Imagen';
+    img.className = 'message__img';
+    img.loading = 'lazy';
+    article.append(img);
+
+    if (content) {
+      const paragraph = document.createElement('p');
+      paragraph.textContent = content;
+      article.append(paragraph);
+    }
+  } else {
+    const paragraph = document.createElement('p');
+    paragraph.textContent = content;
+    article.append(paragraph);
+  }
 
   if (timestamp) {
     const time = document.createElement('time');
@@ -349,6 +428,10 @@ function toggleMessageLoading(isLoading) {
   selectors.submit.disabled = isLoading;
   selectors.submit.textContent = isLoading ? 'Enviando...' : 'Enviar';
   selectors.input.disabled = isLoading;
+
+  if (selectors.imgInput) {
+    selectors.imgInput.disabled = isLoading;
+  }
 }
 
 function createChatApiClient({ endpoint, historyEndpoint: historyEndpointUrl, headers = {} }) {
