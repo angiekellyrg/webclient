@@ -229,7 +229,8 @@ async function handleImageChange(event) {
 
   try {
     base64 = await readFileAsBase64(file);
-  } catch {
+  } catch (error) {
+    console.error('Error leyendo imagen:', error);
     appendMessage({ role: 'system', content: 'No se pudo leer la imagen.' });
     return;
   }
