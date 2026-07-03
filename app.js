@@ -14,6 +14,9 @@ const selectors = {
   imgInput: document.querySelector('#chat-img-input'),
   submit: document.querySelector('#chat-submit'),
   messages: document.querySelector('#chat-messages'),
+  installBanner: document.querySelector('#install-banner'),
+  installBtn: document.querySelector('#install-btn'),
+  installDismiss: document.querySelector('#install-dismiss'),
 };
 
 const chatEndpoint = document.body?.dataset.chatEndpoint?.trim() || '';
@@ -54,6 +57,43 @@ document.querySelectorAll('.js-placeholder-link').forEach((link) => {
 });
 selectors.input?.addEventListener('input', autoResizeTextArea);
 selectors.form?.addEventListener('submit', handleMessageSubmit);
+
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  if (selectors.installBanner) {
+    selectors.installBanner.hidden = false;
+  }
+});
+
+selectors.installBtn?.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) {
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  if (selectors.installBanner) {
+    selectors.installBanner.hidden = true;
+  }
+  void outcome;
+});
+
+selectors.installDismiss?.addEventListener('click', () => {
+  if (selectors.installBanner) {
+    selectors.installBanner.hidden = true;
+  }
+  deferredInstallPrompt = null;
+});
+
+window.addEventListener('appinstalled', () => {
+  if (selectors.installBanner) {
+    selectors.installBanner.hidden = true;
+  }
+  deferredInstallPrompt = null;
+});
 
 function setPanelState(isOpen) {
   if (!selectors.panel || !selectors.toggle) {
